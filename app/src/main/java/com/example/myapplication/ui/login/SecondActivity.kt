@@ -13,11 +13,13 @@ import android.widget.Toast
 import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
+import com.alibaba.fastjson.JSON
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.Request
 import com.example.myapplication.R
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import kotlinx.android.synthetic.main.activity_second.*
 import kotlinx.coroutines.*
 import okhttp3.Call
@@ -30,6 +32,8 @@ import org.jetbrains.anko.uiThread
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 import java.net.URL
 
@@ -37,7 +41,8 @@ import java.net.URL
 class SecondActivity : AppCompatActivity(),CoroutineScope by MainScope(){
 
     val jsonString = "{\"name\":\"wang\",\"age\":\"18\",\"job\":\"student\"}"
-    val jsonArrayString = "[{\"l1\":\"demo\",\"l2\":2},{\"l1\":\"demo\",\"l2\":2}]"
+
+
 
     var itemlist = ArrayList<String>()
     var adapter : MyAdapter? = null
@@ -46,6 +51,8 @@ class SecondActivity : AppCompatActivity(),CoroutineScope by MainScope(){
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_second)
+
+
 
         fun ArrayList<String>.getData(){
             for(i in 0..20){
@@ -66,13 +73,23 @@ class SecondActivity : AppCompatActivity(),CoroutineScope by MainScope(){
         buttonin.setOnClickListener { startActivity<LoginActivity>("name" to "wang","age" to 11) }
 
         buttonnet.setOnClickListener {
-            doAsync {
-                val result = URL("https://translate.dollarkiller.com/translate?sl=&tl=fr&text=helo").readText()
-                uiThread { show.setText(result) }
-            }
+
+            var js  = JSONArray()
+            var jsb  = JSONObject()
+            var jsb1 = JSONObject()
+
+            jsb.put("id",0)
+            jsb.put("answer","b")
+            jsb1.put("id",1)
+            jsb1.put("answer","a")
+
+            js.put(jsb)
+            js.put(jsb1)
+            show.setText("${js.toString()}")
+//            show.setText("${jsb.toString()}")
         }
 
-        buttontest.setOnClickListener { net() }
+        buttontest.setOnClickListener { retrofit2() }
     }
 
 
@@ -110,6 +127,72 @@ class SecondActivity : AppCompatActivity(),CoroutineScope by MainScope(){
             }
 
         })
+    }
+
+    fun retrofit(){
+        var retrofit = Retrofit.Builder()
+            .baseUrl("http://192.168.50.177:8081/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val ipService = retrofit.create(APIservices::class.java)
+        ipService.getData().enqueue(object : retrofit2.Callback<Data>{
+            override fun onFailure(call: retrofit2.Call<Data>?, t: Throwable?) {
+                print("response failture")
+            }
+
+            override fun onResponse(
+                call: retrofit2.Call<Data>?,
+                response: retrofit2.Response<Data>?
+            ) {
+                var data : Data = response!!.body()
+                show.text = "${data.data}"
+                print("${response.body().data}")
+            }
+
+        })
+    }
+
+    fun retrofit2(){
+        var jsonArray = JSONArray()
+
+        var jsonObject = JSONObject()
+        var jsonObject1 = JSONObject()
+        jsonObject.put("id",0)
+        jsonObject.put("answer","a")
+        jsonObject1.put("id",1)
+        jsonObject1.put("answer","b")
+        jsonArray.put(jsonObject)
+        jsonArray.put(jsonObject1)
+
+        var retrofit = Retrofit.Builder()
+            .baseUrl("http://192.168.50.177:8081/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        var se = retrofit.create(APIservices::class.java)
+        se.getCall(jsonArray).enqueue(object :retrofit2.Callback<Answer>{
+            override fun onFailure(call: retrofit2.Call<Answer>?, t: Throwable?) {
+
+            }
+
+            override fun onResponse(
+                call: retrofit2.Call<Answer>?,
+                response: retrofit2.Response<Answer>?
+            ) {
+                var data : Answer = response!!.body()
+                show.text ="${data.data!![0]}"
+            }
+
+        })
+    }
+
+    fun getJson(json : JSONArray){
+        for (i in 0..json.length() - 1){
+            var obj : JSONObject = json.get(i) as JSONObject
+            var obj_id = obj.getInt("id")
+            var list  = arrayOf(obj_id)
+        }
     }
 
 
