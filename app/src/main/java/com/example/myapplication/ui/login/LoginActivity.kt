@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.login
 
 import android.app.Activity
+import android.content.Intent
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import android.os.Bundle
@@ -91,8 +92,9 @@ class LoginActivity : AppCompatActivity() {
             }
 
             login.setOnClickListener {
-                loading.visibility = View.VISIBLE
-                loginViewModel.login(username.text.toString(), password.text.toString())
+//                loading.visibility = View.VISIBLE
+//                loginViewModel.login(username.text.toString(), password.text.toString())
+                startActivity(Intent(this@LoginActivity,BroadcasterTestActivity::class.java))
             }
         }
     }

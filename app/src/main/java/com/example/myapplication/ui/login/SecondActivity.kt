@@ -22,10 +22,8 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.android.synthetic.main.activity_second.*
 import kotlinx.coroutines.*
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.OkHttpClient
-import okhttp3.Response
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.startActivity
 import org.jetbrains.anko.uiThread
@@ -34,7 +32,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.io.IOException
+import java.io.*
 import java.net.URL
 
 
@@ -46,21 +44,36 @@ class SecondActivity : AppCompatActivity(),CoroutineScope by MainScope(){
 
     var itemlist = ArrayList<String>()
     var adapter : MyAdapter? = null
+    var bufferedWriter : BufferedWriter? = null
+    var bufferedReader : BufferedReader? = null
+
+    val NEWS_URL : String = "http://api.shujuzhihui.cn/api/news/"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_second)
 
+        var js  = JSONArray()
+        var jsb  = JSONObject()
+        var jsb1 = JSONObject()
 
+        jsb.put("id",0)
+        jsb.put("answer","b")
+        jsb1.put("id",1)
+        jsb1.put("answer","a")
 
-        fun ArrayList<String>.getData(){
-            for(i in 0..20){
-                this.add("str:"+i)
+        js.put(jsb)
+        js.put(jsb1)
+        var answer :String? = null
+
+        fun ArrayList<String>.addData(){
+            for (i in 0..js.length()-1){
+                var obj : JSONObject = js.get(i) as JSONObject
+                this.add(obj.getString("answer"))
             }
         }
-
-        itemlist.getData()
+        itemlist.addData()
         adapter = MyAdapter(itemlist,this)
         listview.adapter = adapter
 
@@ -69,6 +82,8 @@ class SecondActivity : AppCompatActivity(),CoroutineScope by MainScope(){
             startActivity<ThirdActivity>("position" to "$position")
 
         }
+
+        buttonbroadtest.setOnClickListener { startActivity<BroadcasterTestActivity>() }
 
         buttonin.setOnClickListener { startActivity<LoginActivity>("name" to "wang","age" to 11) }
 
@@ -85,11 +100,66 @@ class SecondActivity : AppCompatActivity(),CoroutineScope by MainScope(){
 
             js.put(jsb)
             js.put(jsb1)
-            show.setText("${js.toString()}")
+            var answer :String? = null
+
+            fun ArrayList<String>.addData(){
+                for (i in 0..js.length()-1){
+                    var obj : JSONObject = js.get(i) as JSONObject
+                    this.add(obj.getString("answer"))
+                }
+            }
+            itemlist.addData()
+            adapter = MyAdapter(itemlist,this)
+            listview.adapter = adapter
+//            show.setText("${js.toString()}")
 //            show.setText("${jsb.toString()}")
         }
 
         buttontest.setOnClickListener { retrofit2() }
+        //保存文件
+        savebtn.setOnClickListener { savefile() }
+        //读取文件
+        readfile()
+    }
+
+    fun savefile(){
+        var text = edittext.text.toString()
+        try {
+            var fileoutputstream = openFileOutput("myapplicationdata", Context.MODE_APPEND)
+            bufferedWriter = BufferedWriter(OutputStreamWriter(fileoutputstream))
+            bufferedWriter!!.write(text)
+        }catch (e : FileNotFoundException){
+            e.printStackTrace()
+        }catch (e : IOException){
+            e.printStackTrace()
+        }finally {
+            try {
+                bufferedWriter!!.close()
+            }catch (e : IOException){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun readfile(){
+        var stringBuilder = StringBuilder()
+        try {
+            var fileInputStream = openFileInput("myapplicationdata")
+            bufferedReader = BufferedReader(InputStreamReader(fileInputStream))
+            stringBuilder.append(bufferedReader!!.readLine())
+        }catch (e : FileNotFoundException){
+            e.printStackTrace()
+        }catch (e : IOException){
+            e.printStackTrace()
+        }finally {
+            try {
+                bufferedReader!!.close()
+            }catch (e : FileNotFoundException){
+                e.printStackTrace()
+            }
+        }
+        var string = stringBuilder.toString()
+        show.text = string
     }
 
 
@@ -171,7 +241,14 @@ class SecondActivity : AppCompatActivity(),CoroutineScope by MainScope(){
             .build()
 
         var se = retrofit.create(APIservices::class.java)
-        se.getCall(jsonArray).enqueue(object :retrofit2.Callback<Answer>{
+
+        var body : requestBody = requestBody(0,"a")
+        var gson : Gson = Gson()
+        var obj : String = gson.toJson(body)
+
+        val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(),jsonObject.toString())
+
+        se.getCall(requestBody).enqueue(object :retrofit2.Callback<Answer>{
             override fun onFailure(call: retrofit2.Call<Answer>?, t: Throwable?) {
 
             }
@@ -186,6 +263,16 @@ class SecondActivity : AppCompatActivity(),CoroutineScope by MainScope(){
 
         })
     }
+
+    fun test(){
+        var mretrofit = Retrofit.Builder()
+            .baseUrl(NEWS_URL)
+            .build()
+
+        var apIservices = mretrofit.create(APIservices::class.java)
+
+    }
+
 
     fun getJson(json : JSONArray){
         for (i in 0..json.length() - 1){
